@@ -51,6 +51,3 @@ export const uploadRetiro  = (id, file) => {
 export const deleteRetiro  = (id, fileId) =>
   api.delete(`/api/v1/facturas/${id}/retiro/${fileId}`).then(r => r.data);
 
-// ── Sync ────────────────────────────────────────────────────────────
-export const triggerSync     = ()  => api.post('/api/v1/facturas/sync').then(r => r.data);
-export const triggerFullSync = ()  => api.post('/api/v1/facturas/sync/full').then(r => r.data);
