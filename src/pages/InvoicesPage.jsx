@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { fetchStats, fetchInvoices, bulkUpdate } from '../api';
+import { fetchStats, fetchInvoices, bulkUpdate, updateInvoice, uploadRetiro } from '../api';
 import { useSelection, useToast } from '../store';
 
 const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -18,6 +18,114 @@ const STATUSES = [
 
 function fmt(n) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n ?? 0);
+}
+
+// ── Modal de subida de documento de retiro ───────────────────────────
+function UploadModal({ invoice, onClose }) {
+  const qc       = useQueryClient();
+  const { show } = useToast();
+  const fileRef  = useRef(null);
+  const [over, setOver] = useState(false);
+
+  const uploadMut = useMutation({
+    mutationFn: (file) => uploadRetiro(invoice.id, file),
+    onSuccess: () => {
+      show('Documento subido correctamente', 'success');
+      qc.invalidateQueries({ queryKey: ['invoices'] });
+      onClose();
+    },
+    onError: () => show('Error al subir el documento', 'error'),
+  });
+
+  const handleFiles = (files) => {
+    const file = files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { show('El archivo supera 10 MB', 'error'); return; }
+    uploadMut.mutate(file);
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span>Subir documento de retiro</span>
+          <small style={{ color: 'var(--text-muted)' }}>{invoice.numero}</small>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div
+          className={`drop-zone ${over ? 'over' : ''} ${uploadMut.isPending ? 'uploading' : ''}`}
+          onDragOver={e => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)}
+          onDrop={e => { e.preventDefault(); setOver(false); handleFiles(e.dataTransfer.files); }}
+          onClick={() => !uploadMut.isPending && fileRef.current.click()}
+        >
+          <div style={{ fontSize: 28 }}>📁</div>
+          <p>{uploadMut.isPending ? 'Subiendo…' : 'Arrastra el archivo aquí o haz clic para seleccionar'}</p>
+          <p style={{ fontSize: 11, marginTop: 4 }}>JPG, PNG, WebP, PDF — máx 10 MB</p>
+          <input
+            ref={fileRef} type="file" hidden
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            onChange={e => handleFiles(e.target.files)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Fila con checkbox entregado + botón upload ───────────────────────
+function InvoiceRow({ inv, selected, onToggle, onNavigate }) {
+  const qc       = useQueryClient();
+  const { show } = useToast();
+  const [uploadTarget, setUploadTarget] = useState(null);
+
+  const entregadoMut = useMutation({
+    mutationFn: (val) => updateInvoice(inv.id, { entregado: val }),
+    onSuccess: (_, val) => {
+      show(val ? 'Marcado como entregado' : 'Marcado como no entregado', 'success');
+      qc.invalidateQueries({ queryKey: ['invoices'] });
+      qc.invalidateQueries({ queryKey: ['invoice', String(inv.id)] });
+    },
+    onError: () => show('Error al actualizar entregado', 'error'),
+  });
+
+  return (
+    <>
+      <tr onClick={onNavigate}>
+        <td onClick={e => e.stopPropagation()}>
+          <input type="checkbox" checked={selected} onChange={onToggle} />
+        </td>
+        <td style={{ fontWeight: 600 }}>{inv.numero}</td>
+        <td>{inv.cliente}</td>
+        <td style={{ color: 'var(--text-muted)' }}>{inv.empresa ?? '—'}</td>
+        <td>{inv.mes}</td>
+        <td className="text-right">{fmt(inv.monto)}</td>
+        <td><span className={`badge ${inv.nitStatus}`}>{inv.nitStatus}</span></td>
+        <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={inv.entregado ?? false}
+              disabled={entregadoMut.isPending}
+              onChange={e => entregadoMut.mutate(e.target.checked)}
+              title={inv.entregado ? 'Marcar como no entregado' : 'Marcar como entregado'}
+              style={{ cursor: 'pointer', width: 15, height: 15 }}
+            />
+            <button
+              className="upload-retiro-btn"
+              onClick={() => setUploadTarget(inv)}
+              title="Subir documento de retiro"
+            >
+              📎
+            </button>
+          </div>
+        </td>
+      </tr>
+      {uploadTarget && (
+        <UploadModal invoice={uploadTarget} onClose={() => setUploadTarget(null)} />
+      )}
+    </>
+  );
 }
 
 export default function InvoicesPage() {
@@ -147,7 +255,7 @@ export default function InvoicesPage() {
                 <th>Mes</th>
                 <th className="text-right">Monto</th>
                 <th>Estado</th>
-                <th>Entregado</th>
+                <th style={{ textAlign: 'center' }}>Entregado</th>
               </tr>
             </thead>
             <tbody>
@@ -160,21 +268,13 @@ export default function InvoicesPage() {
                   </tr>
                 ))
                 : invoices.map(inv => (
-                  <tr key={inv.id} onClick={() => navigate(`/facturas/${inv.id}`)}>
-                    <td onClick={e => e.stopPropagation()}>
-                      <input type="checkbox"
-                        checked={selectedIds.has(inv.id)}
-                        onChange={() => toggle(inv.id)}
-                      />
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{inv.numero}</td>
-                    <td>{inv.cliente}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{inv.empresa ?? '—'}</td>
-                    <td>{inv.mes}</td>
-                    <td className="text-right">{fmt(inv.monto)}</td>
-                    <td><span className={`badge ${inv.nitStatus}`}>{inv.nitStatus}</span></td>
-                    <td style={{ textAlign: 'center' }}>{inv.entregado ? '✅' : '—'}</td>
-                  </tr>
+                  <InvoiceRow
+                    key={inv.id}
+                    inv={inv}
+                    selected={selectedIds.has(inv.id)}
+                    onToggle={() => toggle(inv.id)}
+                    onNavigate={() => navigate(`/facturas/${inv.id}`)}
+                  />
                 ))
               }
             </tbody>
