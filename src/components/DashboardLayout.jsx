@@ -15,7 +15,8 @@ export default function DashboardLayout() {
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <img src="/logo.png" alt="NexTech" style={{ width: 110, height: 'auto', display: 'block', margin: '0 auto', filter: 'drop-shadow(0 0 12px rgba(15,30,60,0.9))' }} />
+          <img src="/logo.png" alt="RST" style={{ width: 110, height: 'auto', display: 'block', margin: '0 auto' }} />
+          <div style={{ textAlign: 'center', fontSize: 11, color: '#64748b', marginTop: 8, letterSpacing: '0.05em' }}>by NexTech</div>
         </div>
 
         <nav className="sidebar-nav">

@@ -83,9 +83,6 @@ export default function InvoiceDetail() {
           <h1>{inv.numero}</h1>
           <span className={`badge ${inv.status}`}>{inv.status}</span>
         </div>
-        <button className="btn btn-outline btn-sm" onClick={() => window.print()}>
-          🖨 Imprimir
-        </button>
       </div>
 
       <div className="page-body">
