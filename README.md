@@ -8,7 +8,7 @@ Frontend del sistema de gestión de facturas de **NexTech / RS Tech Limitada**. 
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| React | 18+ | Librería UI principal |
+| React | 19+ | Librería UI principal |
 | Vite | 8+ | Bundler y servidor de desarrollo |
 | React Router v7 | 7+ | Navegación SPA con rutas protegidas |
 | TanStack Query v5 | 5+ | Fetching, caché y sincronización de datos |
