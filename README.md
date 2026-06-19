@@ -156,7 +156,17 @@ El backend que expone esta API es **nextech-dashboard-api** — Spring Boot 3.3.
 
 ---
 
-## Equipo
+## Estructura del equipo
 
-**NexTech / RS Tech Limitada**
-Desarrollado como sistema interno de gestion de facturas integrado con WooCommerce.
+| Nombre | Rol |
+|---|---|
+| Alex Caica Zamora | Scrum Master / Development Team |
+| Renato Ortega Ramos | Development Team |
+| Ángel Prado Correa | Development Team |
+| Manuel Reyes Bustos | Product Owner |
+
+---
+
+## Tablero Kanban
+
+https://caica-ortega-prado.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog
