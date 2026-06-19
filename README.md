@@ -30,4 +30,4 @@ Frontend del sistema de gestión de facturas de **NexTech / RS Tech Limitada**. 
 
 ## Tablero Kanban
 
-https://caica-ortega-prado.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog
+https://caica-ortega-prado.atlassian.net/jira/software/projects/SCRUM/list?jql=project%20%3D%20SCRUM%20ORDER%20BY%20created%20ASC
