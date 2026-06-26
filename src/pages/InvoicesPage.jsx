@@ -2,6 +2,12 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { fetchStats, fetchInvoices, bulkUpdate, updateInvoice, uploadRetiro } from '../api';
+
+const TABS = [
+  { value: '',       label: 'Todos' },
+  { value: 'lioren', label: 'Facturas' },
+  { value: 'boleta', label: 'Boletas' },
+];
 import { useSelection, useToast } from '../store';
 
 const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -134,14 +140,14 @@ export default function InvoicesPage() {
   const { show }     = useToast();
   const { selectedIds, toggle, selectAll, clear } = useSelection();
 
-  const [filters, setFilters] = useState({ status: '', mes: '', search: '' });
+  const [filters, setFilters] = useState({ status: '', mes: '', search: '', source: '' });
   const [page, setPage]       = useState(0);
   const [bulkStatus, setBulkStatus] = useState('pagada');
 
   // ── Queries ──────────────────────────────────────────────────────
   const { data: stats } = useQuery({
-    queryKey: ['stats'],
-    queryFn:  fetchStats,
+    queryKey: ['stats', filters.source],
+    queryFn:  () => fetchStats(filters.source),
   });
 
   const { data, isLoading } = useQuery({
@@ -161,7 +167,7 @@ export default function InvoicesPage() {
       show(`${res.updated} facturas actualizadas a "${bulkStatus}"`, 'success');
       clear();
       qc.invalidateQueries({ queryKey: ['invoices'] });
-      qc.invalidateQueries({ queryKey: ['stats'] });
+      qc.invalidateQueries({ queryKey: ['stats'], exact: false });
     },
     onError: () => show('Error al actualizar facturas', 'error'),
   });
@@ -184,6 +190,19 @@ export default function InvoicesPage() {
       </div>
 
       <div className="page-body">
+
+        {/* Tabs Todos / Facturas / Boletas */}
+        <div className="doc-tabs">
+          {TABS.map(tab => (
+            <button
+              key={tab.value}
+              className={`doc-tab ${filters.source === tab.value ? 'active' : ''}`}
+              onClick={() => setFilter('source', tab.value)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         {/* Stats */}
         <div className="stats-grid">

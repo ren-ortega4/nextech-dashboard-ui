@@ -28,10 +28,13 @@ export const login    = (data) => api.post('/api/v1/auth/login',    data).then(r
 export const register = (data) => api.post('/api/v1/auth/register', data).then(r => r.data);
 
 // ── Facturas ────────────────────────────────────────────────────────
-export const fetchStats    = ()     => api.get('/api/v1/facturas/stats').then(r => r.data);
+export const fetchStats    = (source) => api.get('/api/v1/facturas/stats', { params: source ? { source } : {} }).then(r => r.data);
 
 export const fetchInvoices = (params) =>
   api.get('/api/v1/facturas', { params }).then(r => r.data);
+
+export const fetchInvoicesBySource = (source, params) =>
+  api.get('/api/v1/facturas', { params: { ...params, source } }).then(r => r.data);
 
 export const fetchInvoice  = (id)   => api.get(`/api/v1/facturas/${id}`).then(r => r.data);
 
