@@ -77,7 +77,7 @@ export default function InvoiceDetail() {
     <>
       <div className="topbar">
         <div className="gap-8">
-          <button className="btn btn-outline btn-sm" onClick={() => navigate('/facturas')}>
+          <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>
             ← Volver
           </button>
           <h1>{inv.numero}</h1>

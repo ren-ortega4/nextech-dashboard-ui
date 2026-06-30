@@ -1,26 +1,43 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { login } from '../api';
-import { useAuth } from '../store';
+import { useAuth, useToast } from '../store';
 
 export default function LoginPage() {
-  const navigate  = useNavigate();
-  const setSession = useAuth(s => s.setSession);
+  const navigate    = useNavigate();
+  const [params]    = useSearchParams();
+  const setSession  = useAuth(s => s.setSession);
+  const { show }    = useToast();
 
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [form, setForm]       = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  const expired = params.get('expired') === 'true';
+  const reset   = params.get('reset')   === 'true';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+
+    if (!form.email.trim()) {
+      show('Ingresa tu correo electrónico', 'error'); return;
+    }
+    if (!form.email.trim().includes('@')) {
+      show('El correo electrónico no es válido', 'error'); return;
+    }
+    if (!form.password.trim()) {
+      show('Ingresa tu contraseña', 'error'); return;
+    }
+
     setLoading(true);
     try {
       const data = await login(form);
       setSession(data.token, { name: data.name, email: data.email, role: data.role });
-      navigate('/facturas', { replace: true });
+      navigate('/documentos', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error ?? 'Credenciales incorrectas');
+      const msg = err.response?.data?.message
+               ?? err.response?.data?.error
+               ?? 'Correo o contraseña incorrectos';
+      show(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -29,17 +46,30 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <h1>NexTech Dashboard</h1>
+        <img src="/logo.png" alt="RST" className="login-logo" />
+
+        <h1>Módulo de Facturación RS Tech</h1>
         <p>Ingresa con tu cuenta para continuar</p>
 
-        <form onSubmit={handleSubmit}>
+        {expired && (
+          <div className="error-msg" style={{ background: '#fef9c3', color: '#854d0e', borderColor: '#fde047', marginBottom: 12 }}>
+            Tu sesión expiró. Inicia sesión nuevamente.
+          </div>
+        )}
+        {reset && (
+          <div className="error-msg" style={{ background: '#f0fdf4', color: '#15803d', borderColor: '#86efac', marginBottom: 12 }}>
+            Contraseña actualizada correctamente. Ya puedes iniciar sesión.
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label>Email</label>
             <input
               type="email" required
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="admin@nextech.cl"
+              placeholder="admin@rstech.cl"
               autoFocus
             />
           </div>
@@ -54,8 +84,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && <div className="error-msg">{error}</div>}
-
           <button
             type="submit"
             className="btn btn-primary"
@@ -65,6 +93,12 @@ export default function LoginPage() {
             {loading ? 'Ingresando…' : 'Ingresar'}
           </button>
         </form>
+
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--primary)', textDecoration: 'none' }}>
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
       </div>
     </div>
   );

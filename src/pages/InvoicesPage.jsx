@@ -1,13 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { fetchStats, fetchInvoices, bulkUpdate, updateInvoice, uploadRetiro } from '../api';
-
-const TABS = [
-  { value: '',       label: 'Todos' },
-  { value: 'lioren', label: 'Facturas' },
-  { value: 'boleta', label: 'Boletas' },
-];
 import { useSelection, useToast } from '../store';
 
 const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -21,6 +15,12 @@ const STATUSES = [
   { value: 'revision',  label: 'En revisión' },
   { value: 'anulada',   label: 'Anulada' },
 ];
+
+const PAGE_TITLES = {
+  '':       'Documentos',
+  'lioren': 'Facturas',
+  'boleta': 'Boletas',
+};
 
 function fmt(n) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n ?? 0);
@@ -134,42 +134,44 @@ function InvoiceRow({ inv, selected, onToggle, onNavigate }) {
   );
 }
 
-export default function InvoicesPage() {
+export default function InvoicesPage({ source = '' }) {
   const navigate     = useNavigate();
+  const location     = useLocation();
   const qc           = useQueryClient();
   const { show }     = useToast();
   const { selectedIds, toggle, selectAll, clear } = useSelection();
 
-  const [filters, setFilters] = useState({ status: '', mes: '', search: '', source: '' });
+  const [filters, setFilters] = useState({ status: '', mes: '', search: '' });
   const [page, setPage]       = useState(0);
   const [bulkStatus, setBulkStatus] = useState('pagada');
 
+  const title = PAGE_TITLES[source] ?? 'Documentos';
+
   // ── Queries ──────────────────────────────────────────────────────
   const { data: stats } = useQuery({
-    queryKey: ['stats', filters.source],
-    queryFn:  () => fetchStats(filters.source),
+    queryKey: ['stats', source],
+    queryFn:  () => fetchStats(source),
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['invoices', filters, page],
-    queryFn:  () => fetchInvoices({ ...filters, page, size: 20 }),
+    queryKey: ['invoices', { ...filters, source }, page],
+    queryFn:  () => fetchInvoices({ ...filters, source, page, size: 20 }),
     keepPreviousData: true,
   });
 
-  const invoices    = data?.content ?? [];
-  const totalPages  = data?.totalPages ?? 1;
-  const totalItems  = data?.totalElements ?? 0;
+  const invoices   = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   // ── Bulk mutation ────────────────────────────────────────────────
   const bulkMut = useMutation({
     mutationFn: () => bulkUpdate([...selectedIds], bulkStatus),
     onSuccess: (res) => {
-      show(`${res.updated} facturas actualizadas a "${bulkStatus}"`, 'success');
+      show(`${res.updated} documentos actualizados a "${bulkStatus}"`, 'success');
       clear();
       qc.invalidateQueries({ queryKey: ['invoices'] });
       qc.invalidateQueries({ queryKey: ['stats'], exact: false });
     },
-    onError: () => show('Error al actualizar facturas', 'error'),
+    onError: () => show('Error al actualizar documentos', 'error'),
   });
 
   // ── Helpers ──────────────────────────────────────────────────────
@@ -179,39 +181,30 @@ export default function InvoicesPage() {
     clear();
   };
 
+  // Detalle navega a la ruta correcta según la sección actual
+  const detailBase = location.pathname.startsWith('/boletas') ? '/boletas'
+                   : location.pathname.startsWith('/facturas') ? '/facturas'
+                   : '/documentos';
+
   const allIds = invoices.map(i => i.id);
   const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
 
   return (
     <>
       <div className="topbar">
-        <h1>Facturas</h1>
-        <span className="text-muted">{totalItems} registros</span>
+        <h1>{title}</h1>
       </div>
 
       <div className="page-body">
 
-        {/* Tabs Todos / Facturas / Boletas */}
-        <div className="doc-tabs">
-          {TABS.map(tab => (
-            <button
-              key={tab.value}
-              className={`doc-tab ${filters.source === tab.value ? 'active' : ''}`}
-              onClick={() => setFilter('source', tab.value)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         {/* Stats */}
         <div className="stats-grid">
           {[
-            { key: 'total',     label: 'Total',      val: stats?.total },
-            { key: 'pendiente', label: 'Pendientes',  val: stats?.pendiente },
-            { key: 'pagada',    label: 'Pagadas',     val: stats?.pagada },
-            { key: 'vencida',   label: 'Vencidas',    val: stats?.vencida },
-            { key: 'revision',  label: 'En revisión', val: stats?.revision },
+            { key: 'total',     label: 'Total',        val: stats?.total },
+            { key: 'pendiente', label: 'Pendientes',   val: stats?.pendiente },
+            { key: 'pagada',    label: 'Pagadas',      val: stats?.pagada },
+            { key: 'vencida',   label: 'Vencidas',     val: stats?.vencida },
+            { key: 'revision',  label: 'En revisión',  val: stats?.revision },
           ].map(({ key, label, val }) => (
             <div key={key} className={`stat-card ${key}`}>
               <div className="label">{label}</div>
@@ -227,7 +220,7 @@ export default function InvoicesPage() {
         {/* Filtros */}
         <div className="filters-bar">
           <input
-            placeholder="Buscar cliente, empresa, N° factura…"
+            placeholder="Buscar cliente, empresa, N° documento…"
             value={filters.search}
             onChange={e => setFilter('search', e.target.value)}
           />
@@ -244,7 +237,7 @@ export default function InvoicesPage() {
         {selectedIds.size > 0 && (
           <div className="filters-bar" style={{ background: '#eff6ff', borderColor: '#93c5fd' }}>
             <span style={{ fontWeight: 600, color: '#1e40af' }}>
-              {selectedIds.size} seleccionadas
+              {selectedIds.size} seleccionados
             </span>
             <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}>
               {STATUSES.slice(1).map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -268,7 +261,7 @@ export default function InvoicesPage() {
                     onChange={() => allSelected ? clear() : selectAll(allIds)}
                   />
                 </th>
-                <th>N° Factura</th>
+                <th>N° Documento</th>
                 <th>Cliente</th>
                 <th>Empresa</th>
                 <th>Mes</th>
@@ -292,7 +285,7 @@ export default function InvoicesPage() {
                     inv={inv}
                     selected={selectedIds.has(inv.id)}
                     onToggle={() => toggle(inv.id)}
-                    onNavigate={() => navigate(`/facturas/${inv.id}`)}
+                    onNavigate={() => navigate(`${detailBase}/${inv.id}`)}
                   />
                 ))
               }

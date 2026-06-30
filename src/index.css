@@ -221,15 +221,27 @@ tbody td { padding: 11px 14px; font-size: 13px; }
 .login-wrap {
   min-height: 100vh; display: flex;
   align-items: center; justify-content: center;
-  background: var(--bg);
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 50%, #0ea5e9 100%);
+  position: relative; overflow: hidden;
+}
+.login-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(255,255,255,.07) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,.05) 0%, transparent 40%);
+  pointer-events: none;
 }
 .login-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 40px; width: 100%; max-width: 380px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  background: rgba(255,255,255,0.97);
+  border: none;
+  border-radius: 16px; padding: 44px 40px; width: 100%; max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  position: relative; z-index: 1;
 }
-.login-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-.login-card p  { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+.login-card h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: #1e293b; }
+.login-card p  { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+.login-logo { display: block; margin: 0 auto 20px; width: 90px; }
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
 .form-group input {
@@ -238,7 +250,8 @@ tbody td { padding: 11px 14px; font-size: 13px; }
   font-size: 14px; background: var(--bg); color: var(--text);
 }
 .form-group input:focus { outline: 2px solid var(--primary); border-color: transparent; }
-.error-msg { color: var(--danger); font-size: 12px; margin-top: 12px; }
+.error-msg { font-size: 12px; margin-top: 12px; padding: 8px 12px; border-radius: 6px; border: 1px solid; }
+.error-msg:not([style]) { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
 
 /* ── Toast ──────────────────────────────────────────────────────── */
 .toast {

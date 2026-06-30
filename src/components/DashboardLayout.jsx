@@ -20,8 +20,14 @@ export default function DashboardLayout() {
         </div>
 
         <nav className="sidebar-nav">
+          <NavLink to="/documentos" className={({ isActive }) => isActive ? 'active' : ''}>
+            📄 Documentos
+          </NavLink>
           <NavLink to="/facturas" className={({ isActive }) => isActive ? 'active' : ''}>
-            📄 Facturas
+            🧾 Facturas
+          </NavLink>
+          <NavLink to="/boletas" className={({ isActive }) => isActive ? 'active' : ''}>
+            🗒️ Boletas
           </NavLink>
         </nav>
 
